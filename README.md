@@ -37,6 +37,8 @@ DevPod ships with a polished desktop client -- but if you're running a **shared 
 
 ## Quick Start
 
+> **First time?** See the **[Complete Setup Guide](SETUP.md)** for step-by-step instructions covering Kubernetes, DevPod, and the dashboard from scratch.
+
 ```bash
 git clone https://github.com/jellologic/devpod-dashboard.git
 cd devpod-dashboard
