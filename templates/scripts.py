@@ -203,7 +203,10 @@ function connectTerminal(podName){
   statusEl.textContent='Connecting...';
   termWs=new WebSocket(url);
   termWs.binaryType='arraybuffer';
-  termObj=new Terminal({cursorBlink:true,fontSize:13,theme:{background:'#0d1117',foreground:'#e1e4e8'}});
+  var cs=getComputedStyle(document.documentElement);
+  var termBg=cs.getPropertyValue('--terminal-bg').trim()||'#0d1117';
+  var termFg=cs.getPropertyValue('--terminal-fg').trim()||'#e1e4e8';
+  termObj=new Terminal({cursorBlink:true,fontSize:13,theme:{background:termBg,foreground:termFg}});
   termFit=new FitAddon.FitAddon();
   termObj.loadAddon(termFit);
   termObj.open(document.getElementById('terminal-container'));
@@ -329,8 +332,11 @@ async function loadUsageHistory(podName){
     if(!data.length)return;
     const cpuData=data.map(d=>[d[0],d[1]]);
     const memData=data.map(d=>[d[0],d[2]]);
-    renderSparkline('sparkline-cpu',cpuData,'#d29922','CPU','m');
-    renderSparkline('sparkline-mem',memData,'#1f6feb','Memory','bytes');
+    var cs=getComputedStyle(document.documentElement);
+    var cpuColor=cs.getPropertyValue('--chart-yellow').trim()||'#d29922';
+    var memColor=cs.getPropertyValue('--chart-blue').trim()||'#1f6feb';
+    renderSparkline('sparkline-cpu',cpuData,cpuColor,'CPU','m');
+    renderSparkline('sparkline-mem',memData,memColor,'Memory','bytes');
   }catch(e){console.error('loadUsageHistory',e)}
 }
 

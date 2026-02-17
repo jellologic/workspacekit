@@ -46,9 +46,9 @@ def render_workspace_detail_page(detail, user="admin"):
         res = detail.get("resources", {})
         actions_html = (
             f'<button class="btn btn-red" onclick="doAction(\'stop\',\'{pod}\')">Stop</button> '
-            f'<button class="btn btn-sm" style="background:#30363d;color:#c9d1d9" '
+            f'<button class="btn btn-sm btn-ghost" '
             f'onclick="promptDuplicate(\'{name}\',\'{pod}\',\'{esc_repo}\')">Duplicate</button> '
-            f'<button class="btn btn-sm" style="background:#1c2129;color:var(--link);border:1px solid var(--border2)" '
+            f'<button class="btn btn-sm btn-ghost" '
             f'onclick="saveAsTemplate(\'{name}\',\'{esc_repo}\','
             f'\'{res.get("req_cpu","4")}\',\'{res.get("req_mem","8Gi")}\','
             f'\'{res.get("lim_cpu","24")}\',\'{res.get("lim_mem","64Gi")}\')">Save as Template</button> '
@@ -67,8 +67,8 @@ def render_workspace_detail_page(detail, user="admin"):
         for cond in detail.get("conditions", []):
             c_type = cond.get("type", "")
             c_status = cond.get("status", "")
-            color = "#3fb950" if c_status == "True" else "#f85149"
-            conditions_html += f'<span style="color:{color};margin-right:0.5rem">{c_type}</span>'
+            cond_cls = "cond-ok" if c_status == "True" else "cond-fail"
+            conditions_html += f'<span class="{cond_cls}" style="margin-right:0.5rem">{c_type}</span>'
 
         # Owner field (Feature 4)
         owner = detail.get("owner", "")
@@ -187,12 +187,12 @@ def render_workspace_detail_page(detail, user="admin"):
         if not state_text:
             state_text = "--"
 
-        ready_color = "#3fb950" if c.get("ready") else "#f85149"
+        ready_cls = "cond-ok" if c.get("ready") else "cond-fail"
         containers_html += f"""\
       <tr>
         <td>{html_mod.escape(c.get('name', ''))}</td>
         <td style="font-size:0.72rem;font-family:monospace">{html_mod.escape(c.get('image', ''))}</td>
-        <td style="color:{ready_color}">{'Yes' if c.get('ready') else 'No'}</td>
+        <td class="{ready_cls}">{'Yes' if c.get('ready') else 'No'}</td>
         <td>{c.get('restart_count', 0)}</td>
         <td>{html_mod.escape(state_text)}</td>
       </tr>"""
@@ -237,10 +237,10 @@ def render_workspace_detail_page(detail, user="admin"):
         usage_cols = ""
         if running and pvc_usage:
             pct = pvc_usage.get("percent", 0)
-            bar_color = "#f85149" if pct >= 80 else "#d29922" if pct >= 60 else "#3fb950"
+            bar_cls = "bar-danger" if pct >= 80 else "bar-warning" if pct >= 60 else "bar-success"
             usage_cols = (
                 f'<td>{html_mod.escape(pvc_usage.get("used", "--"))} / {html_mod.escape(pvc_usage.get("total", "--"))}'
-                f' <div class="pvc-bar"><div class="bar-seg" style="width:{pct}%;background:{bar_color}"></div></div></td>'
+                f' <div class="pvc-bar"><div class="bar-seg {bar_cls}" style="width:{pct}%"></div></div></td>'
                 f'<td>{pct}%</td>')
         elif running:
             usage_cols = '<td>--</td><td>--</td>'
@@ -320,7 +320,7 @@ def render_workspace_detail_page(detail, user="admin"):
             f'<div class="day-checks">{days_html}</div>'
             f'<input type="time" id="sched-{prefix}-time">'
             f'<button class="btn btn-blue btn-sm" onclick="saveSchedule(\'{prefix}\')">Set</button>'
-            f'<button class="btn btn-sm" style="background:var(--border2);color:var(--text)" '
+            f'<button class="btn btn-sm btn-ghost" '
             f'onclick="removeSchedule(\'{prefix}\')">Remove</button>'
             f'</div>')
 

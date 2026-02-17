@@ -32,12 +32,12 @@ def render_main_page(workspaces, settings, user="admin"):
     cores = sorted([k for k in cpu if k != "cpu"], key=lambda x: int(x[3:]))
     for c in cores:
         pct = cpu[c]
-        color = "#f85149" if pct >= 80 else "#d29922" if pct >= 50 else "#3fb950" if pct >= 20 else "#238636"
+        color_cls = "bar-danger" if pct >= 80 else "bar-warning" if pct >= 50 else "bar-success" if pct >= 20 else "bar-success-dim"
         cnum = c[3:]
         core_cells += (
             f'<div class="core" title="CPU {cnum}: {pct}%">'
             f'<span class="core-id">{cnum}</span>'
-            f'<div class="core-bar"><div class="core-fill" style="width:{max(1,pct)}%;background:{color}"></div></div>'
+            f'<div class="core-bar"><div class="core-fill {color_cls}" style="width:{max(1,pct)}%"></div></div>'
             f'</div>\n')
 
     mem_total = mem.get("total", 1)
@@ -147,7 +147,7 @@ def render_main_page(workspaces, settings, user="admin"):
             esc_repo = repo.replace("'", "\\'")
             actions = (
                 f'<button class="btn btn-red" onclick="doAction(\'stop\',\'{w["pod"]}\')">Stop</button> '
-                f'<button class="btn btn-sm" style="background:#30363d;color:#c9d1d9" onclick="promptDuplicate(\'{w["name"]}\',\'{w["pod"]}\',\'{esc_repo}\')">Duplicate</button> '
+                f'<button class="btn btn-sm btn-ghost" onclick="promptDuplicate(\'{w["name"]}\',\'{w["pod"]}\',\'{esc_repo}\')">Duplicate</button> '
                 f'<button class="btn btn-outline-red" onclick="confirmDelete(this,\'{w["name"]}\',\'{w["pod"]}\',\'{w["uid"]}\')">Delete</button>')
             if w["shutdown_at"]:
                 try:
@@ -214,23 +214,23 @@ def render_main_page(workspaces, settings, user="admin"):
     <div class="metric">
       <div class="metric-label"><span>Memory</span><span>{kbg(mem.get('used',0))} / {kbg(mem_total)} ({mem.get('used',0)*100//max(mem_total,1)}%)</span></div>
       <div class="bar">
-        <div class="bar-seg" style="width:{mem_used_pct:.1f}%;background:#3fb950"></div>
-        <div class="bar-seg" style="width:{mem_buf_pct:.1f}%;background:#1f6feb"></div>
-        <div class="bar-seg" style="width:{mem_cache_pct:.1f}%;background:#d29922"></div>
+        <div class="bar-seg bar-seg-used" style="width:{mem_used_pct:.1f}%"></div>
+        <div class="bar-seg bar-seg-buffers" style="width:{mem_buf_pct:.1f}%"></div>
+        <div class="bar-seg bar-seg-cache" style="width:{mem_cache_pct:.1f}%"></div>
       </div>
-      <div style="font-size:0.65rem;color:var(--muted);margin-top:2px">
-        <span style="color:#3fb950">&#9632;</span> used
-        <span style="color:#1f6feb;margin-left:6px">&#9632;</span> buffers
-        <span style="color:#d29922;margin-left:6px">&#9632;</span> cache
+      <div class="mem-legend">
+        <span class="legend-used">&#9632;</span> used
+        <span class="legend-buffers" style="margin-left:6px">&#9632;</span> buffers
+        <span class="legend-cache" style="margin-left:6px">&#9632;</span> cache
       </div>
     </div>
     <div class="metric">
       <div class="metric-label"><span>Swap</span><span>{kbg(swap_used)} / {kbg(swap_total)}</span></div>
-      <div class="bar"><div class="bar-seg" style="width:{swap_pct:.1f}%;background:#f85149"></div></div>
+      <div class="bar"><div class="bar-seg bar-seg-swap" style="width:{swap_pct:.1f}%"></div></div>
     </div>
     <div class="metric">
       <div class="metric-label"><span>Disk /</span><span>{gb(disk_used)} / {gb(disk_total)} ({disk_pct:.0f}%)</span></div>
-      <div class="bar"><div class="bar-seg" style="width:{disk_pct:.1f}%;background:#1f6feb"></div></div>
+      <div class="bar"><div class="bar-seg bar-seg-disk" style="width:{disk_pct:.1f}%"></div></div>
     </div>
     <div class="chips" style="margin-top:0.5rem">
       <div class="chip"><span class="val">{load[0]:.2f}</span> <span class="lbl">1m</span>
@@ -315,7 +315,7 @@ def render_main_page(workspaces, settings, user="admin"):
   <span class="presets-toggle" onclick="document.getElementById('presets-panel').style.display=document.getElementById('presets-panel').style.display==='none'?'block':'none'">&#128203; Templates</span>
   <div id="presets-panel" style="display:none">
     <div class="presets-grid" id="presets-grid"><span class="muted" style="font-size:0.78rem">Loading...</span></div>
-    <button class="btn btn-sm" style="background:#30363d;color:#c9d1d9;margin-bottom:0.5rem" onclick="showSavePresetForm()">+ Save New Template</button>
+    <button class="btn btn-sm btn-ghost" style="margin-bottom:0.5rem" onclick="showSavePresetForm()">+ Save New Template</button>
     <div class="save-preset-form" id="save-preset-form">
       <div class="form-row"><label>Name</label><input id="sp-name" placeholder="e.g. Python Dev"></div>
       <div class="form-row"><label>Description</label><input id="sp-desc" placeholder="optional"></div>
@@ -324,7 +324,7 @@ def render_main_page(workspaces, settings, user="admin"):
       <div class="form-row"><label>Mem req/lim</label><input id="sp-rmem" value="8Gi" style="width:60px"> / <input id="sp-lmem" value="64Gi" style="width:60px"></div>
       <div class="form-row">
         <button class="btn btn-blue btn-sm" onclick="savePreset()">Save Template</button>
-        <button class="btn btn-sm" style="background:var(--border2);color:var(--text);margin-left:4px" onclick="hideSavePresetForm()">Cancel</button>
+        <button class="btn btn-sm btn-ghost" style="margin-left:4px" onclick="hideSavePresetForm()">Cancel</button>
       </div>
     </div>
   </div>
@@ -354,7 +354,7 @@ def render_main_page(workspaces, settings, user="admin"):
     <div><label>Mem limit</label><input id="rz-lmem"></div>
   </div>
   <button class="btn btn-blue btn-sm" onclick="doResize()">Apply &amp; Restart</button>
-  <button class="btn btn-sm" style="background:var(--border2);color:var(--text);margin-left:4px" onclick="hideResize()">Cancel</button>
+  <button class="btn btn-sm btn-ghost" style="margin-left:4px" onclick="hideResize()">Cancel</button>
   <input type="hidden" id="rz-pod"><input type="hidden" id="rz-uid">
 </div>
 
