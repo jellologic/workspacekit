@@ -1,5 +1,0 @@
-{
-  "admin": {"password": "changeme", "role": "admin"},
-  "alice": {"password": "alicepass", "role": "user", "prefixes": ["alice-", "shared-"]},
-  "bob": {"password": "bobpass", "role": "user", "prefixes": ["bob-", "shared-"]}
-}

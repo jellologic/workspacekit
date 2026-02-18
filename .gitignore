@@ -1,8 +1,37 @@
-__pycache__/
-*.pyc
-*.pyo
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.output/
+.vinxi/
+.turbo/
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Test artifacts
+test-results/
+playwright-report/
+/tmp/*.png
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
 *.swp
 *.swo
-*~
-.DS_Store
+
+# Bun
+*.bun
+
+# Debug logs
+*.log
+
+# Vinxi timestamp configs
+app.config.timestamp_*

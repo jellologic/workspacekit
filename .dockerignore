@@ -1,0 +1,9 @@
+node_modules
+.git
+*.md
+.env*
+dist
+.output
+__tests__
+*.test.*
+.turbo

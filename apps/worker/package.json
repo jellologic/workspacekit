@@ -1,0 +1,22 @@
+{
+  "name": "@devpod/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "dev": "bun run --watch src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@devpod/k8s": "workspace:*",
+    "@devpod/types": "workspace:*"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.0",
+    "typescript": "^5.7.0"
+  }
+}

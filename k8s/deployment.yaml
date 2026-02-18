@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devpod-dashboard
+  namespace: devpod
+  labels:
+    app: devpod-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devpod-dashboard
+  template:
+    metadata:
+      labels:
+        app: devpod-dashboard
+    spec:
+      serviceAccountName: devpod-dashboard
+      containers:
+        - name: devpod-dashboard
+          image: devpod-dashboard:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: devpod-dashboard-config
+            - secretRef:
+                name: gh-credentials
+                optional: true
+          env:
+            - name: DASHBOARD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: openvscode-server
+              mountPath: /opt/openvscode-server
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: openvscode-server
+          hostPath:
+            path: /opt/openvscode-server
+            type: Directory
