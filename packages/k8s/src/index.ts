@@ -59,6 +59,7 @@ export {
   saveWorkspaceDefaults,
   saveWorkspaceMeta,
   getWorkspaceMeta,
+  migrateMetaConfigMaps,
   savePodSpec,
   getSavedPodSpec,
 } from './configmaps.js'

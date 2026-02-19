@@ -18,20 +18,32 @@ Think of it as a self-hosted alternative to GitHub Codespaces or Gitpod. You get
 
 ## Features
 
+### Dashboard
+- **Host summary** — Live CPU, memory, and disk gauges with sparkline trends, system info, and workspace counts
+- **Dark navigator sidebar** — Persistent tree-nav with host, workspaces (with status dots), storage, monitor, and manage sections
+- **Recent tasks panel** — Collapsible bottom panel tracking create/start/stop/delete operations in real time
+
+### Workspaces
 - **One-click workspaces** — Create a dev environment from any Git repo URL (public or private)
+- **Data grid + card views** — Sortable table with status, CPU, memory, owner, repository, branch, and age columns; toggle to card layout
+- **Bulk actions** — Start, stop, or delete multiple workspaces with multi-select checkboxes
+- **Right-click context menus** — Quick access to actions on any workspace row or card
+- **Workspace detail** — Tabbed view with Summary, Monitor, Configure, Logs, and Terminal tabs
+
+### Development Environment
 - **devcontainer.json support** — Automatically detects and applies devcontainer features, settings, and extensions
 - **In-browser VS Code** — Full OpenVSCode Server editor accessible from any browser
 - **Integrated terminal** — xterm.js terminal with real-time streaming via WebSockets
-- **Resource management** — Set CPU and memory limits per workspace
-- **Persistent storage** — Each workspace gets a dedicated PVC, surviving restarts
-- **Auto-shutdown schedules** — Configure daily shutdown windows to save resources
-- **Workspace expiry** — Automatically delete idle workspaces after a configurable period
-- **Templates** — Pre-configured workspace templates for common stacks
-- **Real-time build logs** — Stream container build progress live in the UI
-- **Bulk actions** — Start, stop, or delete multiple workspaces at once
-- **Multi-user authentication** — Simple credential-based auth with session cookies
+- **Real-time build logs** — Stream container build progress live via SSE
 - **Workspace duplication** — Clone an existing workspace with one click
-- **Dashboard stats** — Overview of running/stopped workspaces and resource usage
+
+### Infrastructure
+- **Resource management** — Set CPU and memory limits per workspace, with LimitRange and ResourceQuota controls
+- **Persistent storage** — Each workspace gets a dedicated PVC, surviving restarts; storage overview page
+- **Auto-shutdown schedules** — Configure daily start/stop windows per workspace
+- **Workspace expiry** — Automatically delete idle workspaces after a configurable period
+- **Presets** — Pre-configured workspace templates for common stacks
+- **Multi-user authentication** — Credential-based auth with HMAC-signed session cookies
 - **Private repo support** — Use a GitHub token to clone private repositories
 
 ## Tech Stack
@@ -121,9 +133,26 @@ The dashboard will be available at `http://localhost:3000`.
 | Resource limits | Per workspace | Per plan | Per plan | Per template |
 | Cost | Free | $0.18+/hr | $0.36+/hr | Free (OSS) |
 
-## Screenshots
+## UI Overview
 
-> Screenshots coming soon — the dashboard features a clean, modern UI with workspace cards, real-time logs, an integrated terminal, and in-browser VS Code.
+The dashboard uses an infrastructure-management inspired design with a dark navigator sidebar, data-grid workspace list, live performance gauges, and a recent tasks panel.
+
+### Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Host summary — live CPU/memory/disk gauges, sparklines, system info |
+| `/workspaces` | Workspace list — sortable data grid with card toggle, bulk actions, context menus |
+| `/workspace/:uid` | Workspace detail — Summary, Monitor, Configure, Logs, Terminal tabs |
+| `/storage` | PVC overview — all workspace persistent volume claims |
+| `/monitor/performance` | Live performance charts with process table |
+| `/monitor/events` | Aggregated Kubernetes events across all workspace pods |
+| `/monitor/tasks` | Full task history log |
+| `/manage/defaults` | Workspace creation defaults (CPU/memory) |
+| `/manage/schedules` | Auto start/stop schedules |
+| `/manage/presets` | Workspace templates |
+| `/manage/expiry` | Inactivity expiry settings |
+| `/manage/quota` | LimitRange and ResourceQuota configuration |
 
 ## Contributing
 

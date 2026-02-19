@@ -65,11 +65,19 @@ export const APIRoute = createAPIFileRoute('/api/schedules')({
       }
       const { action } = ScheduleActionSchema.parse(body)
 
+      // The dispatch action (set/remove) and the schedule action (start/stop)
+      // collide on the same `action` field. The client sends `schedule_action`
+      // for the schedule type; remap it to `action` for the Zod input schemas.
+      const mapped =
+        typeof body === 'object' && body !== null && 'schedule_action' in body
+          ? { ...body, action: (body as Record<string, unknown>).schedule_action }
+          : body
+
       switch (action) {
         case 'set':
-          return await handleSetSchedule(body)
+          return await handleSetSchedule(mapped)
         case 'remove':
-          return await handleRemoveSchedule(body)
+          return await handleRemoveSchedule(mapped)
         default:
           return fail(`Unknown action: ${action}`)
       }

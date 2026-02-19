@@ -58,7 +58,7 @@ import type {
 import { config } from '~/lib/config'
 import { generateUid, repoToName, sanitizeName } from '~/lib/utils'
 import { getPodMetricsCache } from './stats'
-import { appendCreationLog, hasCreationLog } from './logs'
+import { appendCreationLog, hasCreationLog, initCreationLog, updateStep } from './logs'
 import { requireServerFnAuth, requireRole } from './auth'
 
 // ---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ function podToWorkspace(
     pod: podName,
     uid,
     running: ready,
-    creating: hasCreationLog(wsName),
+    creating: hasCreationLog(uid),
     shutdown_at: annotations['wsk/shutdown-at'] ?? '',
     shutdown_hours: annotations['wsk/shutdown-hours'] ?? '',
     resources,
@@ -277,19 +277,19 @@ export const getWorkspaces = createServerFn({ method: 'GET' }).handler(
  * Gets detailed information for a single workspace, including events.
  */
 export const getWorkspaceDetail = createServerFn({ method: 'GET' })
-  .validator((input: { name: string }) => input)
-  .handler(async ({ data }): Promise<WorkspaceDetail> => {
+  .validator((input: { uid: string }) => input)
+  .handler(async ({ data }): Promise<WorkspaceDetail | null> => {
     await requireServerFnAuth()
 
-    const { name } = data
+    const { uid } = data
 
     // Try to find a running pod for this workspace
     const pods = await listWorkspacePods()
-    const pod = pods.find((p) => getWorkspaceName(p) === name)
+    const pod = pods.find((p) => getWorkspaceUid(p) === uid)
 
     if (pod) {
       const podName = pod.metadata?.name ?? ''
-      const uid = getWorkspaceUid(pod)
+      const wsName = getWorkspaceName(pod)
       const annotations = pod.metadata?.annotations ?? {}
       const resources = getContainerResources(pod)
       const metricsCache = getPodMetricsCache()
@@ -337,7 +337,7 @@ export const getWorkspaceDetail = createServerFn({ method: 'GET' })
         : ''
 
       return {
-        name,
+        name: wsName,
         status: ready ? 'Running' : (pod.status?.phase ?? 'Unknown'),
         pod: podName,
         port,
@@ -347,7 +347,7 @@ export const getWorkspaceDetail = createServerFn({ method: 'GET' })
         usage: metric ? { cpu: metric.cpu, memory: metric.memory } : null,
         repo: annotations['wsk/repo'] ?? '',
         running: ready,
-        creating: hasCreationLog(name),
+        creating: hasCreationLog(uid),
         uid,
         pod_ip: pod.status?.podIP ?? '',
         node: pod.spec?.nodeName ?? '',
@@ -365,19 +365,19 @@ export const getWorkspaceDetail = createServerFn({ method: 'GET' })
       }
     }
 
-    // Workspace is stopped -- look for saved spec
+    // Workspace is stopped -- look for saved spec by uid
     const savedCms = await listConfigMaps(
-      `managed-by=workspacekit,workspace-name=${name}`,
+      `managed-by=workspacekit,workspace-uid=${uid}`,
     )
     const savedCm = savedCms.find(
       (cm) => cm.metadata?.name?.startsWith('saved-'),
     )
 
     if (!savedCm) {
-      throw new Response('Workspace not found', { status: 404 })
+      return null
     }
 
-    const uid = savedCm.metadata?.labels?.['workspace-uid'] ?? ''
+    const wsName = savedCm.metadata?.labels?.['workspace-name'] ?? ''
     let spec: import('@kubernetes/client-node').V1Pod | undefined
     try {
       spec = JSON.parse(savedCm.data?.spec ?? '{}')
@@ -406,7 +406,7 @@ export const getWorkspaceDetail = createServerFn({ method: 'GET' })
       }))
 
     return {
-      name,
+      name: wsName,
       status: 'Stopped',
       pod: null,
       port: 0,
@@ -449,15 +449,17 @@ export const createWorkspace = createServerFn({ method: 'POST' })
       : repoToName(repo)
     const uid = generateUid()
 
-    appendCreationLog(name, `Creating workspace "${name}" (uid: ${uid})`)
+    initCreationLog(uid)
+    updateStep(uid, 'provisioning', 'in-progress')
+    appendCreationLog(uid, `Creating workspace "${name}" (uid: ${uid})`)
 
     // Fetch devcontainer.json from the repo
-    appendCreationLog(name, 'Fetching devcontainer.json...')
+    appendCreationLog(uid, 'Fetching devcontainer.json...')
     const devcontainer = await fetchDevcontainerConfig(repo)
     // Form-provided values override devcontainer/defaults
     const image = data.image || devcontainer.image
     const postCreateCmd = devcontainer.postCreateCmd
-    appendCreationLog(name, `Using image: ${image}`)
+    appendCreationLog(uid, `Using image: ${image}`)
 
     // Get resource defaults
     const defaults = await getWorkspaceDefaults()
@@ -469,17 +471,20 @@ export const createWorkspace = createServerFn({ method: 'POST' })
     }
 
     // Create PVC
-    appendCreationLog(name, `Creating PVC pvc-${uid} (${config.diskSize})...`)
+    appendCreationLog(uid, `Creating PVC pvc-${uid} (${config.diskSize})...`)
     const pvcSpec = buildPvcSpec(name, uid, config.diskSize)
     await createPvc(pvcSpec)
 
     // Create Service
-    appendCreationLog(name, `Creating Service svc-${uid}...`)
+    appendCreationLog(uid, `Creating Service svc-${uid}...`)
     const svcSpec = buildServiceSpec(name, uid)
     await createService(svcSpec)
 
+    updateStep(uid, 'provisioning', 'completed')
+    updateStep(uid, 'cloning', 'in-progress')
+
     // Build and create pod
-    appendCreationLog(name, `Creating Pod ws-${uid}...`)
+    appendCreationLog(uid, `Creating Pod ws-${uid}...`)
     const podOptions: BuildPodSpecOptions = {
       name,
       uid,
@@ -503,13 +508,21 @@ export const createWorkspace = createServerFn({ method: 'POST' })
 
     await createPod(podSpec)
 
+    // Skip inapplicable steps
+    if (devcontainer.features.length === 0) {
+      updateStep(uid, 'features', 'completed')
+    }
+    if (!postCreateCmd) {
+      updateStep(uid, 'postcreate', 'completed')
+    }
+
     // Save workspace metadata ConfigMap
-    appendCreationLog(name, 'Saving workspace metadata...')
+    appendCreationLog(uid, 'Saving workspace metadata...')
     await saveWorkspaceMeta(name, uid, repo, image, postCreateCmd)
 
-    appendCreationLog(name, 'Workspace created successfully.')
+    appendCreationLog(uid, 'Workspace created successfully.')
 
-    return { ok: true, message: `Workspace "${name}" created` }
+    return { ok: true, message: `Workspace "${name}" created`, uid }
   })
 
 /**
@@ -601,8 +614,8 @@ export const deleteWorkspace = createServerFn({ method: 'POST' })
     // Delete saved spec ConfigMap (if stopped)
     await deleteConfigMap(`saved-${uid}`)
 
-    // Delete meta ConfigMap
-    await deleteConfigMap(`meta-${name}`)
+    // Delete meta ConfigMap (uid-based naming)
+    await deleteConfigMap(`meta-${uid}`)
 
     return { ok: true, message: `Workspace "${name}" deleted` }
   })
@@ -658,7 +671,19 @@ export const rebuildWorkspace = createServerFn({ method: 'POST' })
       podSpec.metadata!.annotations['wsk/owner'] = owner
     }
 
+    initCreationLog(uid)
+    updateStep(uid, 'provisioning', 'completed')
+    updateStep(uid, 'cloning', 'in-progress')
+    appendCreationLog(uid, `Rebuilding workspace "${name}"`)
+
     await createPod(podSpec)
+
+    if (features.length === 0) {
+      updateStep(uid, 'features', 'completed')
+    }
+    if (!postCreateCmd) {
+      updateStep(uid, 'postcreate', 'completed')
+    }
 
     // Update metadata
     await saveWorkspaceMeta(name, uid, repo, image, postCreateCmd)
@@ -723,7 +748,7 @@ export const duplicateWorkspace = createServerFn({ method: 'POST' })
     const session = await requireServerFnAuth()
     requireRole(session, 'admin')
 
-    const { source_pod, source_name, new_name, repo } = data
+    const { source_pod, source_name, source_uid, new_name, repo } = data
     const name = sanitizeName(new_name)
     const uid = generateUid()
 
@@ -745,8 +770,12 @@ export const duplicateWorkspace = createServerFn({ method: 'POST' })
 
     // Get postCreateCmd and features from devcontainer config
     const devcontainer = await fetchDevcontainerConfig(repo)
-    const meta = await getWorkspaceMeta(source_name)
+    const meta = await getWorkspaceMeta(source_uid)
     const postCreateCmd = meta?.data?.post_create_cmd || devcontainer.postCreateCmd
+
+    initCreationLog(uid)
+    updateStep(uid, 'provisioning', 'in-progress')
+    appendCreationLog(uid, `Duplicating "${source_name}" as "${name}"`)
 
     // Create PVC
     const pvcSpec = buildPvcSpec(name, uid, config.diskSize)
@@ -755,6 +784,9 @@ export const duplicateWorkspace = createServerFn({ method: 'POST' })
     // Create Service
     const svcSpec = buildServiceSpec(name, uid)
     await createService(svcSpec)
+
+    updateStep(uid, 'provisioning', 'completed')
+    updateStep(uid, 'cloning', 'in-progress')
 
     // Create Pod
     const podOptions: BuildPodSpecOptions = {
@@ -776,10 +808,17 @@ export const duplicateWorkspace = createServerFn({ method: 'POST' })
 
     await createPod(podSpec)
 
+    if (devcontainer.features.length === 0) {
+      updateStep(uid, 'features', 'completed')
+    }
+    if (!postCreateCmd) {
+      updateStep(uid, 'postcreate', 'completed')
+    }
+
     // Save metadata
     await saveWorkspaceMeta(name, uid, repo, image, postCreateCmd)
 
-    return { ok: true, message: `Workspace duplicated as "${name}"` }
+    return { ok: true, message: `Workspace duplicated as "${name}"`, uid }
   })
 
 /**
@@ -866,7 +905,7 @@ export const bulkAction = createServerFn({ method: 'POST' })
             await deletePvc(`pvc-${ws.uid}`)
             await deleteService(`svc-${ws.uid}`)
             await deleteConfigMap(`saved-${ws.uid}`)
-            await deleteConfigMap(`meta-${ws.name}`)
+            await deleteConfigMap(`meta-${ws.uid}`)
             results.push(`Deleted: ${ws.name}`)
             break
           }

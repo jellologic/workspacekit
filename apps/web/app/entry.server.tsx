@@ -6,11 +6,16 @@ import {
 import { createRouter } from './router'
 import { startStatsCollection } from './server/stats'
 import { getSession } from './server/auth'
-import { exec, namespace, getPod } from '@workspacekit/k8s'
+import { exec, namespace, getPod, migrateMetaConfigMaps } from '@workspacekit/k8s'
 import { PassThrough } from 'node:stream'
 
 // Start background stats collection when the server starts
 startStatsCollection()
+
+// Migrate old meta-{name} ConfigMaps to meta-{uid} format
+migrateMetaConfigMaps().catch((err) => {
+  console.error('[startup] Failed to migrate meta ConfigMaps:', err)
+})
 
 // ---------------------------------------------------------------------------
 // TanStack Start request handler

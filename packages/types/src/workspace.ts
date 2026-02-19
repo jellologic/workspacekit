@@ -123,6 +123,17 @@ export const GitInfoSchema = z.object({
 });
 export type GitInfo = z.infer<typeof GitInfoSchema>;
 
+// --- Creation steps ---
+
+export type CreationStepId = 'provisioning' | 'cloning' | 'features' | 'postcreate' | 'starting'
+export type CreationStepStatus = 'pending' | 'in-progress' | 'completed' | 'error'
+
+export interface CreationStep {
+  id: CreationStepId
+  label: string
+  status: CreationStepStatus
+}
+
 // --- Creation log ---
 
 export const CreationLogSchema = z.object({
@@ -209,6 +220,7 @@ export type ResizeWorkspaceInput = z.infer<typeof ResizeWorkspaceInputSchema>;
 export const DuplicateWorkspaceInputSchema = z.object({
   source_pod: z.string(),
   source_name: z.string(),
+  source_uid: z.string(),
   new_name: z.string().max(63, 'Name must be 63 characters or fewer'),
   repo: z.string().url({ message: 'Must be a valid URL' }),
 });

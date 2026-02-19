@@ -1,9 +1,13 @@
 /**
- * Ring buffer for workspace creation logs.
+ * Ring buffer for workspace creation logs with step tracking.
  *
  * Mirrors the Python LogBuffer pattern: keeps up to MAX_LINES per workspace
  * and automatically cleans up entries older than CLEANUP_AGE_MS.
+ *
+ * All functions are keyed by workspace UID (not name).
  */
+
+import type { CreationStep, CreationStepId, CreationStepStatus } from '@workspacekit/types'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -18,12 +22,23 @@ const CLEANUP_AGE_MS = 30 * 60 * 1000
 /** How often the cleanup sweep runs (every 5 minutes). */
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 
+/** The 5 creation steps in order. */
+const STEP_DEFINITIONS: Array<{ id: CreationStepId; label: string }> = [
+  { id: 'provisioning', label: 'Provisioning resources' },
+  { id: 'cloning', label: 'Cloning repository' },
+  { id: 'features', label: 'Installing features' },
+  { id: 'postcreate', label: 'Running postCreateCommand' },
+  { id: 'starting', label: 'Starting workspace' },
+]
+
 // ---------------------------------------------------------------------------
 // Storage
 // ---------------------------------------------------------------------------
 
 interface LogEntry {
   lines: string[]
+  steps: CreationStep[]
+  status: 'creating' | 'completed' | 'error'
   createdAt: number
 }
 
@@ -57,14 +72,50 @@ if (typeof cleanupTimer === 'object' && 'unref' in cleanupTimer) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Initializes a creation log entry with all 5 steps in pending state.
+ */
+export function initCreationLog(uid: string): void {
+  logStore.set(uid, {
+    lines: [],
+    steps: STEP_DEFINITIONS.map((s) => ({ ...s, status: 'pending' as CreationStepStatus })),
+    status: 'creating',
+    createdAt: Date.now(),
+  })
+}
+
+/**
+ * Updates a single step's status.
+ */
+export function updateStep(uid: string, stepId: CreationStepId, status: CreationStepStatus): void {
+  const entry = logStore.get(uid)
+  if (!entry) return
+  const step = entry.steps.find((s) => s.id === stepId)
+  if (step) step.status = status
+}
+
+/**
+ * Returns the full creation state: lines, steps, and overall status.
+ */
+export function getCreationState(uid: string): { lines: string[]; steps: CreationStep[]; status: string } | null {
+  const entry = logStore.get(uid)
+  if (!entry) return null
+  return { lines: [...entry.lines], steps: [...entry.steps], status: entry.status }
+}
+
+/**
  * Appends a single log line for the given workspace.
  * Creates the entry if it does not exist. Trims to MAX_LINES (FIFO).
  */
-export function appendCreationLog(workspaceName: string, line: string): void {
-  let entry = logStore.get(workspaceName)
+export function appendCreationLog(uid: string, line: string): void {
+  let entry = logStore.get(uid)
   if (!entry) {
-    entry = { lines: [], createdAt: Date.now() }
-    logStore.set(workspaceName, entry)
+    entry = {
+      lines: [],
+      steps: STEP_DEFINITIONS.map((s) => ({ ...s, status: 'pending' as CreationStepStatus })),
+      status: 'creating',
+      createdAt: Date.now(),
+    }
+    logStore.set(uid, entry)
   }
 
   entry.lines.push(line)
@@ -78,30 +129,33 @@ export function appendCreationLog(workspaceName: string, line: string): void {
 /**
  * Returns all log lines for the given workspace, or an empty array if none.
  */
-export function getCreationLog(workspaceName: string): string[] {
-  return logStore.get(workspaceName)?.lines ?? []
+export function getCreationLog(uid: string): string[] {
+  return logStore.get(uid)?.lines ?? []
 }
 
 /**
  * Removes the log entry for the given workspace.
  */
-export function clearCreationLog(workspaceName: string): void {
-  logStore.delete(workspaceName)
+export function clearCreationLog(uid: string): void {
+  logStore.delete(uid)
 }
 
 /**
  * Returns true if there are log lines stored for the given workspace.
  */
-export function hasCreationLog(workspaceName: string): boolean {
-  const entry = logStore.get(workspaceName)
+export function hasCreationLog(uid: string): boolean {
+  const entry = logStore.get(uid)
   return entry !== undefined && entry.lines.length > 0
 }
 
 /**
- * Marks a creation log as finished by appending a final status line.
- * The log entry remains in the store (subject to the normal cleanup timer)
- * so the UI can poll for the completion status.
+ * Marks a creation log as finished by appending a final status line
+ * and updating the overall status.
  */
-export function finishCreationLog(workspaceName: string): void {
-  appendCreationLog(workspaceName, '[done]')
+export function finishCreationLog(uid: string, error?: boolean): void {
+  const entry = logStore.get(uid)
+  if (entry) {
+    entry.status = error ? 'error' : 'completed'
+  }
+  appendCreationLog(uid, '[done]')
 }

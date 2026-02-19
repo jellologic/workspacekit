@@ -22,7 +22,7 @@ import {
 import { config } from '~/lib/config'
 import { generateUid, sanitizeName } from '~/lib/utils'
 import { requireAuth, requireCsrf, requireRole, sanitizeError } from '~/server/auth'
-import { appendCreationLog } from '~/server/logs'
+import { appendCreationLog, initCreationLog, updateStep } from '~/server/logs'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -183,17 +183,23 @@ async function handleCreateFromPreset(body: unknown): Promise<Response> {
     openvscodePath: config.openvscodePath,
   })
 
-  appendCreationLog(name, `Creating workspace "${name}" from preset "${preset.name}"`)
+  initCreationLog(uid)
+  updateStep(uid, 'provisioning', 'completed')
+  updateStep(uid, 'cloning', 'in-progress')
+  appendCreationLog(uid, `Creating workspace "${name}" from preset "${preset.name}"`)
   await createPod(podSpec)
 
   // Create service
   const svcSpec = buildServiceSpec(name, uid)
   await createService(svcSpec)
 
+  updateStep(uid, 'features', 'completed')
+  updateStep(uid, 'postcreate', 'completed')
+
   // Save metadata
   await savePodSpec(uid, name, podSpec)
   await saveWorkspaceMeta(name, uid, preset.repo_url, config.defaultImage, '')
-  appendCreationLog(name, 'Workspace creation from preset complete')
+  appendCreationLog(uid, 'Workspace creation from preset complete')
 
-  return ok(`Workspace "${name}" created from preset "${preset.name}"`)
+  return json({ ok: true, message: `Workspace "${name}" created from preset "${preset.name}"`, uid })
 }

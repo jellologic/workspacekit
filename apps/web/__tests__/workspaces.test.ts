@@ -412,14 +412,14 @@ describe('deleteWorkspace - deleting a workspace entirely', () => {
     await mockDeletePod(`ws-${uid}`)
     await mockDeleteService(`svc-${uid}`)
     await mockDeletePvc(`pvc-${uid}`)
-    await mockDeleteConfigMap(`meta-${name}`)
+    await mockDeleteConfigMap(`meta-${uid}`)
     await mockDeleteConfigMap(`saved-${uid}`)
 
     expect(mockDeletePod).toHaveBeenCalledWith(`ws-${uid}`)
     expect(mockDeleteService).toHaveBeenCalledWith(`svc-${uid}`)
     expect(mockDeletePvc).toHaveBeenCalledWith(`pvc-${uid}`)
     expect(mockDeleteConfigMap).toHaveBeenCalledTimes(2)
-    expect(mockDeleteConfigMap).toHaveBeenCalledWith(`meta-${name}`)
+    expect(mockDeleteConfigMap).toHaveBeenCalledWith(`meta-${uid}`)
     expect(mockDeleteConfigMap).toHaveBeenCalledWith(`saved-${uid}`)
   })
 

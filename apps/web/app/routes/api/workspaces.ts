@@ -25,6 +25,7 @@ import {
   createService,
   deletePvc,
   deleteService,
+  deleteConfigMap,
   getWorkspaceDefaults,
   getWorkspaceMeta,
   namespace,
@@ -32,7 +33,7 @@ import {
 import { config } from '~/lib/config'
 import { generateUid, repoToName, sanitizeName } from '~/lib/utils'
 import { requireAuth, requireCsrf, requireRole, sanitizeError } from '~/server/auth'
-import { appendCreationLog } from '~/server/logs'
+import { appendCreationLog, initCreationLog, updateStep } from '~/server/logs'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -141,6 +142,11 @@ async function handleCreate(body: unknown): Promise<Response> {
     : repoToName(input.repo)
   const owner = input.owner ?? ''
 
+  initCreationLog(uid)
+  updateStep(uid, 'provisioning', 'in-progress')
+  appendCreationLog(uid, `Creating workspace "${name}" (uid: ${uid})`)
+  appendCreationLog(uid, `Repo: ${input.repo}`)
+
   // Fetch workspace defaults for resource requests/limits
   const defaults = await getWorkspaceDefaults()
   const resources = {
@@ -174,22 +180,26 @@ async function handleCreate(body: unknown): Promise<Response> {
     }
   }
 
-  appendCreationLog(name, `Creating workspace "${name}" (uid: ${uid})`)
-  appendCreationLog(name, `Repo: ${input.repo}`)
-
-  await createPod(podSpec)
-
   // Create NodePort service
   const svcSpec = buildServiceSpec(name, uid)
   await createService(svcSpec)
+
+  updateStep(uid, 'provisioning', 'completed')
+  updateStep(uid, 'cloning', 'in-progress')
+
+  await createPod(podSpec)
+
+  // No features or postCreateCmd in basic API create (those come from devcontainer.json via server fn)
+  updateStep(uid, 'features', 'completed')
+  updateStep(uid, 'postcreate', 'completed')
 
   // Save pod spec and metadata for rebuilds
   await savePodSpec(uid, name, podSpec)
   await saveWorkspaceMeta(name, uid, input.repo, image, '')
 
-  appendCreationLog(name, 'Workspace creation complete')
+  appendCreationLog(uid, 'Workspace creation complete')
 
-  return ok(`Workspace "${name}" created successfully`)
+  return json({ ok: true, message: `Workspace "${name}" created successfully`, uid })
 }
 
 async function handleStop(body: unknown): Promise<Response> {
@@ -238,6 +248,10 @@ async function handleDelete(body: unknown): Promise<Response> {
   // Delete PVC
   await deletePvc(`pvc-${input.uid}`)
 
+  // Delete saved spec and meta ConfigMaps
+  await deleteConfigMap(`saved-${input.uid}`)
+  await deleteConfigMap(`meta-${input.uid}`)
+
   return ok(`Workspace "${input.name}" deleted`)
 }
 
@@ -257,7 +271,7 @@ async function handleRebuild(body: unknown): Promise<Response> {
   }
 
   // Get existing metadata for image / post-create command
-  const meta = await getWorkspaceMeta(input.name)
+  const meta = await getWorkspaceMeta(input.uid)
   const image = meta?.data?.image || config.defaultImage
   const postCreateCmd = meta?.data?.post_create_cmd || ''
 
@@ -280,10 +294,13 @@ async function handleRebuild(body: unknown): Promise<Response> {
     }
   }
 
-  appendCreationLog(input.name, `Rebuilding workspace "${input.name}"`)
+  initCreationLog(input.uid)
+  updateStep(input.uid, 'provisioning', 'completed')
+  updateStep(input.uid, 'cloning', 'in-progress')
+  appendCreationLog(input.uid, `Rebuilding workspace "${input.name}"`)
   await createPod(podSpec)
   await savePodSpec(input.uid, input.name, podSpec)
-  appendCreationLog(input.name, 'Rebuild complete')
+  appendCreationLog(input.uid, 'Rebuild complete')
 
   return ok(`Workspace "${input.name}" rebuilt`)
 }
@@ -335,8 +352,12 @@ async function handleDuplicate(body: unknown): Promise<Response> {
   const uid = generateUid()
   const name = sanitizeName(input.new_name)
 
-  // Get source workspace metadata
-  const meta = await getWorkspaceMeta(input.source_name)
+  initCreationLog(uid)
+  updateStep(uid, 'provisioning', 'in-progress')
+  appendCreationLog(uid, `Duplicating "${input.source_name}" as "${name}"`)
+
+  // Get source workspace metadata by uid
+  const meta = await getWorkspaceMeta(input.source_uid)
   const image = meta?.data?.image || config.defaultImage
   const postCreateCmd = meta?.data?.post_create_cmd || ''
 
@@ -352,6 +373,13 @@ async function handleDuplicate(body: unknown): Promise<Response> {
   const pvcSpec = buildPvcSpec(name, uid, config.diskSize)
   await createPvc(pvcSpec)
 
+  // Create service
+  const svcSpec = buildServiceSpec(name, uid)
+  await createService(svcSpec)
+
+  updateStep(uid, 'provisioning', 'completed')
+  updateStep(uid, 'cloning', 'in-progress')
+
   // Build and create pod
   const podSpec = buildPodSpec({
     name,
@@ -363,19 +391,14 @@ async function handleDuplicate(body: unknown): Promise<Response> {
     openvscodePath: config.openvscodePath,
   })
 
-  appendCreationLog(name, `Duplicating "${input.source_name}" as "${name}"`)
   await createPod(podSpec)
-
-  // Create service
-  const svcSpec = buildServiceSpec(name, uid)
-  await createService(svcSpec)
 
   // Save metadata
   await savePodSpec(uid, name, podSpec)
   await saveWorkspaceMeta(name, uid, input.repo, image, postCreateCmd)
-  appendCreationLog(name, 'Duplication complete')
+  appendCreationLog(uid, 'Duplication complete')
 
-  return ok(`Workspace "${name}" created from "${input.source_name}"`)
+  return json({ ok: true, message: `Workspace "${name}" created from "${input.source_name}"`, uid })
 }
 
 async function handleSetTimer(body: unknown): Promise<Response> {

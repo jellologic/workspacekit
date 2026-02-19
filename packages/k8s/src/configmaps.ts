@@ -206,7 +206,7 @@ export async function saveWorkspaceDefaults(defaults: WorkspaceDefaults): Promis
 // ---------------------------------------------------------------------------
 
 /**
- * Saves workspace metadata as a configmap named `meta-{name}`.
+ * Saves workspace metadata as a configmap named `meta-{uid}`.
  */
 export async function saveWorkspaceMeta(
   name: string,
@@ -217,7 +217,7 @@ export async function saveWorkspaceMeta(
   ns: string = namespace,
 ): Promise<void> {
   await upsertConfigMap(
-    `meta-${name}`,
+    `meta-${uid}`,
     ns,
     {
       repo_url: repoUrl,
@@ -234,10 +234,40 @@ export async function saveWorkspaceMeta(
 }
 
 /**
- * Gets workspace metadata configmap.
+ * Gets workspace metadata configmap by UID.
  */
-export async function getWorkspaceMeta(name: string): Promise<k8s.V1ConfigMap | null> {
-  return getConfigMap(`meta-${name}`)
+export async function getWorkspaceMeta(uid: string): Promise<k8s.V1ConfigMap | null> {
+  return getConfigMap(`meta-${uid}`)
+}
+
+/**
+ * Migrates old `meta-{name}` ConfigMaps to `meta-{uid}` format.
+ * Run once at server startup. For each meta CM that has a workspace-uid label
+ * and whose name doesn't match `meta-{uid}`, create the new CM and delete the old.
+ */
+export async function migrateMetaConfigMaps(): Promise<void> {
+  const metaCms = await listConfigMaps('managed-by=workspacekit,component=workspace-meta')
+  for (const cm of metaCms) {
+    const cmName = cm.metadata?.name ?? ''
+    const uid = cm.metadata?.labels?.['workspace-uid'] ?? ''
+    if (!uid || cmName === `meta-${uid}`) continue
+
+    // This is an old meta-{name} CM — copy to meta-{uid} and delete old
+    const wsName = cm.metadata?.labels?.['workspace-name'] ?? ''
+    await upsertConfigMap(
+      `meta-${uid}`,
+      namespace,
+      cm.data ?? {},
+      {
+        'managed-by': 'workspacekit',
+        component: 'workspace-meta',
+        'workspace-name': wsName,
+        'workspace-uid': uid,
+      },
+    )
+    await deleteConfigMap(cmName)
+    console.log(`[migrate] Renamed ConfigMap ${cmName} → meta-${uid}`)
+  }
 }
 
 // ---------------------------------------------------------------------------

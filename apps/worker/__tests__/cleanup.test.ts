@@ -83,7 +83,7 @@ function makeSavedSpecCm(uid: string, workspaceName: string) {
 function makeMetaCm(workspaceName: string, uid: string) {
   return {
     metadata: {
-      name: `meta-${workspaceName}`,
+      name: `meta-${uid}`,
       labels: {
         'managed-by': 'workspacekit',
         component: 'workspace-meta',

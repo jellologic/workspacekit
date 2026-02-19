@@ -251,6 +251,7 @@ function buildStartupScript(opts: {
   if (opts.features.length > 0) {
     // Only include the install function if there are features to install
     // Use a marker file to skip reinstalls on container restart
+    lines.push('echo "@@STEP:features:in-progress"')
     lines.push('if [ ! -f /tmp/.dcf-installed ]; then')
     // Set standard devcontainer feature env vars
     lines.push('export USERNAME=root')
@@ -273,15 +274,19 @@ function buildStartupScript(opts: {
     lines.push('. /etc/bash.bashrc 2>/dev/null || true')
     lines.push('. /etc/profile 2>/dev/null || true')
     lines.push('. ~/.bashrc 2>/dev/null || true')
+    lines.push('echo "@@STEP:features:completed"')
   }
 
   if (opts.postCreateCmd) {
+    lines.push('echo "@@STEP:postcreate:in-progress"')
     lines.push('if [ ! -f /tmp/.postcreate-done ]; then')
     lines.push(opts.postCreateCmd)
     lines.push('touch /tmp/.postcreate-done')
     lines.push('fi')
+    lines.push('echo "@@STEP:postcreate:completed"')
   }
 
+  lines.push('echo "@@STEP:starting:in-progress"')
   lines.push(`exec ${opts.openvscodePath}/bin/openvscode-server --host 0.0.0.0 --port 10800 --connection-token ${opts.uid}`)
 
   return lines.join('\n')

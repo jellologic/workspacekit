@@ -48,9 +48,12 @@ export function sanitizeName(input: string): string {
 
 /**
  * Generates a short random UID suitable for workspace identifiers.
+ * Produces a 10-char lowercase alphanumeric string (base36), safe for K8s names.
  */
 export function generateUid(): string {
-  return crypto.randomBytes(8).toString('hex')
+  const bytes = crypto.randomBytes(6)
+  const num = bytes.readUIntBE(0, 6)
+  return num.toString(36).padStart(10, '0')
 }
 
 /**

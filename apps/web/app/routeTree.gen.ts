@@ -13,7 +13,17 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
-import { Route as WorkspaceNameImport } from './routes/workspace.$name'
+import { Route as WorkspacesImport } from './routes/workspaces'
+import { Route as StorageImport } from './routes/storage'
+import { Route as WorkspaceUidImport } from './routes/workspace.$uid'
+import { Route as MonitorPerformanceImport } from './routes/monitor.performance'
+import { Route as MonitorEventsImport } from './routes/monitor.events'
+import { Route as MonitorTasksImport } from './routes/monitor.tasks'
+import { Route as ManageDefaultsImport } from './routes/manage.defaults'
+import { Route as ManageSchedulesImport } from './routes/manage.schedules'
+import { Route as ManagePresetsImport } from './routes/manage.presets'
+import { Route as ManageExpiryImport } from './routes/manage.expiry'
+import { Route as ManageQuotaImport } from './routes/manage.quota'
 
 // Create/Update Routes
 
@@ -29,9 +39,69 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const WorkspaceNameRoute = WorkspaceNameImport.update({
-  id: '/workspace/$name',
-  path: '/workspace/$name',
+const WorkspacesRoute = WorkspacesImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const StorageRoute = StorageImport.update({
+  id: '/storage',
+  path: '/storage',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const WorkspaceUidRoute = WorkspaceUidImport.update({
+  id: '/workspace/$uid',
+  path: '/workspace/$uid',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MonitorPerformanceRoute = MonitorPerformanceImport.update({
+  id: '/monitor/performance',
+  path: '/monitor/performance',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MonitorEventsRoute = MonitorEventsImport.update({
+  id: '/monitor/events',
+  path: '/monitor/events',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MonitorTasksRoute = MonitorTasksImport.update({
+  id: '/monitor/tasks',
+  path: '/monitor/tasks',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManageDefaultsRoute = ManageDefaultsImport.update({
+  id: '/manage/defaults',
+  path: '/manage/defaults',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManageSchedulesRoute = ManageSchedulesImport.update({
+  id: '/manage/schedules',
+  path: '/manage/schedules',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManagePresetsRoute = ManagePresetsImport.update({
+  id: '/manage/presets',
+  path: '/manage/presets',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManageExpiryRoute = ManageExpiryImport.update({
+  id: '/manage/expiry',
+  path: '/manage/expiry',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManageQuotaRoute = ManageQuotaImport.update({
+  id: '/manage/quota',
+  path: '/manage/quota',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -53,11 +123,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
-    '/workspace/$name': {
-      id: '/workspace/$name'
-      path: '/workspace/$name'
-      fullPath: '/workspace/$name'
-      preLoaderRoute: typeof WorkspaceNameImport
+    '/workspaces': {
+      id: '/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof WorkspacesImport
+      parentRoute: typeof rootRoute
+    }
+    '/storage': {
+      id: '/storage'
+      path: '/storage'
+      fullPath: '/storage'
+      preLoaderRoute: typeof StorageImport
+      parentRoute: typeof rootRoute
+    }
+    '/workspace/$uid': {
+      id: '/workspace/$uid'
+      path: '/workspace/$uid'
+      fullPath: '/workspace/$uid'
+      preLoaderRoute: typeof WorkspaceUidImport
+      parentRoute: typeof rootRoute
+    }
+    '/monitor/performance': {
+      id: '/monitor/performance'
+      path: '/monitor/performance'
+      fullPath: '/monitor/performance'
+      preLoaderRoute: typeof MonitorPerformanceImport
+      parentRoute: typeof rootRoute
+    }
+    '/monitor/events': {
+      id: '/monitor/events'
+      path: '/monitor/events'
+      fullPath: '/monitor/events'
+      preLoaderRoute: typeof MonitorEventsImport
+      parentRoute: typeof rootRoute
+    }
+    '/monitor/tasks': {
+      id: '/monitor/tasks'
+      path: '/monitor/tasks'
+      fullPath: '/monitor/tasks'
+      preLoaderRoute: typeof MonitorTasksImport
+      parentRoute: typeof rootRoute
+    }
+    '/manage/defaults': {
+      id: '/manage/defaults'
+      path: '/manage/defaults'
+      fullPath: '/manage/defaults'
+      preLoaderRoute: typeof ManageDefaultsImport
+      parentRoute: typeof rootRoute
+    }
+    '/manage/schedules': {
+      id: '/manage/schedules'
+      path: '/manage/schedules'
+      fullPath: '/manage/schedules'
+      preLoaderRoute: typeof ManageSchedulesImport
+      parentRoute: typeof rootRoute
+    }
+    '/manage/presets': {
+      id: '/manage/presets'
+      path: '/manage/presets'
+      fullPath: '/manage/presets'
+      preLoaderRoute: typeof ManagePresetsImport
+      parentRoute: typeof rootRoute
+    }
+    '/manage/expiry': {
+      id: '/manage/expiry'
+      path: '/manage/expiry'
+      fullPath: '/manage/expiry'
+      preLoaderRoute: typeof ManageExpiryImport
+      parentRoute: typeof rootRoute
+    }
+    '/manage/quota': {
+      id: '/manage/quota'
+      path: '/manage/quota'
+      fullPath: '/manage/quota'
+      preLoaderRoute: typeof ManageQuotaImport
       parentRoute: typeof rootRoute
     }
   }
@@ -68,41 +208,131 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/workspace/$name': typeof WorkspaceNameRoute
+  '/workspaces': typeof WorkspacesRoute
+  '/storage': typeof StorageRoute
+  '/workspace/$uid': typeof WorkspaceUidRoute
+  '/monitor/performance': typeof MonitorPerformanceRoute
+  '/monitor/events': typeof MonitorEventsRoute
+  '/monitor/tasks': typeof MonitorTasksRoute
+  '/manage/defaults': typeof ManageDefaultsRoute
+  '/manage/schedules': typeof ManageSchedulesRoute
+  '/manage/presets': typeof ManagePresetsRoute
+  '/manage/expiry': typeof ManageExpiryRoute
+  '/manage/quota': typeof ManageQuotaRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/workspace/$name': typeof WorkspaceNameRoute
+  '/workspaces': typeof WorkspacesRoute
+  '/storage': typeof StorageRoute
+  '/workspace/$uid': typeof WorkspaceUidRoute
+  '/monitor/performance': typeof MonitorPerformanceRoute
+  '/monitor/events': typeof MonitorEventsRoute
+  '/monitor/tasks': typeof MonitorTasksRoute
+  '/manage/defaults': typeof ManageDefaultsRoute
+  '/manage/schedules': typeof ManageSchedulesRoute
+  '/manage/presets': typeof ManagePresetsRoute
+  '/manage/expiry': typeof ManageExpiryRoute
+  '/manage/quota': typeof ManageQuotaRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/workspace/$name': typeof WorkspaceNameRoute
+  '/workspaces': typeof WorkspacesRoute
+  '/storage': typeof StorageRoute
+  '/workspace/$uid': typeof WorkspaceUidRoute
+  '/monitor/performance': typeof MonitorPerformanceRoute
+  '/monitor/events': typeof MonitorEventsRoute
+  '/monitor/tasks': typeof MonitorTasksRoute
+  '/manage/defaults': typeof ManageDefaultsRoute
+  '/manage/schedules': typeof ManageSchedulesRoute
+  '/manage/presets': typeof ManagePresetsRoute
+  '/manage/expiry': typeof ManageExpiryRoute
+  '/manage/quota': typeof ManageQuotaRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/workspace/$name'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/workspaces'
+    | '/storage'
+    | '/workspace/$uid'
+    | '/monitor/performance'
+    | '/monitor/events'
+    | '/monitor/tasks'
+    | '/manage/defaults'
+    | '/manage/schedules'
+    | '/manage/presets'
+    | '/manage/expiry'
+    | '/manage/quota'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/workspace/$name'
-  id: '__root__' | '/' | '/login' | '/workspace/$name'
+  to:
+    | '/'
+    | '/login'
+    | '/workspaces'
+    | '/storage'
+    | '/workspace/$uid'
+    | '/monitor/performance'
+    | '/monitor/events'
+    | '/monitor/tasks'
+    | '/manage/defaults'
+    | '/manage/schedules'
+    | '/manage/presets'
+    | '/manage/expiry'
+    | '/manage/quota'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/workspaces'
+    | '/storage'
+    | '/workspace/$uid'
+    | '/monitor/performance'
+    | '/monitor/events'
+    | '/monitor/tasks'
+    | '/manage/defaults'
+    | '/manage/schedules'
+    | '/manage/presets'
+    | '/manage/expiry'
+    | '/manage/quota'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  WorkspaceNameRoute: typeof WorkspaceNameRoute
+  WorkspacesRoute: typeof WorkspacesRoute
+  StorageRoute: typeof StorageRoute
+  WorkspaceUidRoute: typeof WorkspaceUidRoute
+  MonitorPerformanceRoute: typeof MonitorPerformanceRoute
+  MonitorEventsRoute: typeof MonitorEventsRoute
+  MonitorTasksRoute: typeof MonitorTasksRoute
+  ManageDefaultsRoute: typeof ManageDefaultsRoute
+  ManageSchedulesRoute: typeof ManageSchedulesRoute
+  ManagePresetsRoute: typeof ManagePresetsRoute
+  ManageExpiryRoute: typeof ManageExpiryRoute
+  ManageQuotaRoute: typeof ManageQuotaRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  WorkspaceNameRoute: WorkspaceNameRoute,
+  WorkspacesRoute: WorkspacesRoute,
+  StorageRoute: StorageRoute,
+  WorkspaceUidRoute: WorkspaceUidRoute,
+  MonitorPerformanceRoute: MonitorPerformanceRoute,
+  MonitorEventsRoute: MonitorEventsRoute,
+  MonitorTasksRoute: MonitorTasksRoute,
+  ManageDefaultsRoute: ManageDefaultsRoute,
+  ManageSchedulesRoute: ManageSchedulesRoute,
+  ManagePresetsRoute: ManagePresetsRoute,
+  ManageExpiryRoute: ManageExpiryRoute,
+  ManageQuotaRoute: ManageQuotaRoute,
 }
 
 export const routeTree = rootRoute
@@ -117,7 +347,17 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/login",
-        "/workspace/$name"
+        "/workspaces",
+        "/storage",
+        "/workspace/$uid",
+        "/monitor/performance",
+        "/monitor/events",
+        "/monitor/tasks",
+        "/manage/defaults",
+        "/manage/schedules",
+        "/manage/presets",
+        "/manage/expiry",
+        "/manage/quota"
       ]
     },
     "/": {
@@ -126,8 +366,38 @@ export const routeTree = rootRoute
     "/login": {
       "filePath": "login.tsx"
     },
-    "/workspace/$name": {
-      "filePath": "workspace.$name.tsx"
+    "/workspaces": {
+      "filePath": "workspaces.tsx"
+    },
+    "/storage": {
+      "filePath": "storage.tsx"
+    },
+    "/workspace/$uid": {
+      "filePath": "workspace.$uid.tsx"
+    },
+    "/monitor/performance": {
+      "filePath": "monitor.performance.tsx"
+    },
+    "/monitor/events": {
+      "filePath": "monitor.events.tsx"
+    },
+    "/monitor/tasks": {
+      "filePath": "monitor.tasks.tsx"
+    },
+    "/manage/defaults": {
+      "filePath": "manage.defaults.tsx"
+    },
+    "/manage/schedules": {
+      "filePath": "manage.schedules.tsx"
+    },
+    "/manage/presets": {
+      "filePath": "manage.presets.tsx"
+    },
+    "/manage/expiry": {
+      "filePath": "manage.expiry.tsx"
+    },
+    "/manage/quota": {
+      "filePath": "manage.quota.tsx"
     }
   }
 }

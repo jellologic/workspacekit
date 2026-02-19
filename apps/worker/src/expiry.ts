@@ -161,14 +161,16 @@ async function deleteWorkspaceResources(
     }
   }
 
-  // Delete workspace meta configmap (meta-{name})
-  try {
-    await deleteConfigMap(`meta-${workspaceName}`)
-  } catch (err) {
-    console.error(
-      `[expiry] Failed to delete meta configmap for ${workspaceName}:`,
-      err,
-    )
+  // Delete workspace meta configmap (meta-{uid})
+  if (uid) {
+    try {
+      await deleteConfigMap(`meta-${uid}`)
+    } catch (err) {
+      console.error(
+        `[expiry] Failed to delete meta configmap for uid ${uid}:`,
+        err,
+      )
+    }
   }
 
   // Delete saved spec configmap (saved-{uid})

@@ -44,11 +44,11 @@ function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-6 rounded-2xl border border-black/[0.06] bg-white/72 p-8 shadow-xl backdrop-blur-xl"
+        className="flex w-full max-w-sm flex-col gap-6 rounded-lg border border-border bg-card p-8 shadow-[var(--shadow-panel)]"
       >
         {/* Header */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#0071e3] to-[#0077ED] text-xl font-extrabold text-white shadow-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-xl font-extrabold text-white shadow-lg">
             W
           </div>
           <div className="text-center">
